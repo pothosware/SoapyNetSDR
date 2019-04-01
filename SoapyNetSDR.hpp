@@ -74,18 +74,18 @@ public:
     /*******************************************************************
      * Frontend corrections API
      ******************************************************************/
-    bool hasFrequencyCorrection(const int direction, const size_t channel) const;
+   // bool hasFrequencyCorrection(const int direction, const size_t channel) const;
 
-    void setFrequencyCorrection(const int direction, const size_t channel, const double value);
+   // void setFrequencyCorrection(const int direction, const size_t channel, const double value);
 
-    double getFrequencyCorrection(const int direction, const size_t channel) const;
+   // double getFrequencyCorrection(const int direction, const size_t channel) const;
 
     /*******************************************************************
      * Gain API
      ******************************************************************/
     std::vector<std::string> listGains(const int direction, const size_t channel) const;
 
-    bool hasGainMode(const int direction, const size_t channel) const;
+    //bool hasGainMode(const int direction, const size_t channel) const;
 
     void setGainMode(const int direction, const size_t channel, const bool automatic);
 
@@ -129,7 +129,7 @@ public:
 
     std::vector<double> listSampleRates(const int direction, const size_t channel) const;
 
-    SoapySDR::RangeList getSampleRateRange(const int direction, const size_t channel) const;
+    //SoapySDR::RangeList getSampleRateRange(const int direction, const size_t channel) const;
 
     /*******************************************************************
      * Bandwidth API
@@ -140,8 +140,11 @@ public:
 
     std::vector<double> listBandwidths(const int direction, const size_t channel) const;
 
-    SoapySDR::RangeList getBandwidthRange(const int direction, const size_t channel) const;
+    //SoapySDR::RangeList getBandwidthRange(const int direction, const size_t channel) const;
 
 private:
     //sockets here
+    
+    	mutable std::mutex	_device_mutex;
+
 };
