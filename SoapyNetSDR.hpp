@@ -3,6 +3,10 @@
 #include <SoapySDR/Device.hpp>
 #include "SoapyRPCSocket.hpp"
 #include "SoapyURLUtils.hpp"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <mutex>
 
 class SoapyNetSDR : public SoapySDR::Device
 {
@@ -95,9 +99,9 @@ public:
 
     void setGain(const int direction, const size_t channel, const std::string &name, const double value);
 
-    double getGain(const int direction, const size_t channel) const;
+    double getGain(const int direction, const size_t channel);
 
-    double getGain(const int direction, const size_t channel, const std::string &name) const;
+    double getGain(const int direction, const size_t channel, const std::string &name);
 
     SoapySDR::Range getGainRange(const int direction, const size_t channel) const;
 
@@ -110,15 +114,15 @@ public:
 
     void setFrequency(const int direction, const size_t channel, const std::string &name, const double frequency, const SoapySDR::Kwargs &args);
 
-    double getFrequency(const int direction, const size_t channel) const;
+    double getFrequency(const int direction, const size_t channel);
 
-    double getFrequency(const int direction, const size_t channel, const std::string &name) const;
+    double getFrequency(const int direction, const size_t channel, const std::string &name);
 
     std::vector<std::string> listFrequencies(const int direction, const size_t channel) const;
 
-    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel) const;
+    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel);
 
-    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel, const std::string &name) const;
+    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel, const std::string &name);
 
     /*******************************************************************
      * Sample Rate API
@@ -141,10 +145,61 @@ public:
     std::vector<double> listBandwidths(const int direction, const size_t channel) const;
 
     //SoapySDR::RangeList getBandwidthRange(const int direction, const size_t channel) const;
+    
+   bool transaction( const unsigned char *cmd, size_t size );
+
+  	bool transaction( const unsigned char *cmd, size_t size,
+                    std::vector< unsigned char > &response );
+   
+   	bool start();
+   	
+	bool stop();
+
+	void apply_channel( unsigned char *cmd, size_t chan );
+	
+	int processUPD(float *data);
+ 
+ 
+#ifndef SOCKET
+#define SOCKET int
+#endif
+   
+SOCKET _tcp;
+SOCKET _udp;
+   
+struct sockaddr_in host_sa; /* local address */
 
 private:
     //sockets here
     
     	mutable std::mutex	_device_mutex;
+    	std::mutex	_tcp_lock;
+    	
 
+  enum radio_type
+  {
+    RADIO_UNKNOWN = 0,
+    RFSPACE_SDR_IQ,
+    RFSPACE_SDR_IP,
+    RFSPACE_NETSDR,
+    RFSPACE_CLOUDIQ
+  };
+
+  radio_type _radio;
+
+
+  bool _running;
+  bool _keep_running;
+  uint16_t _sequence;
+
+  size_t _nchan;
+  double _sample_rate;
+  double _bandwidth;
+  
+  SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
+
+	float datasave[256*2*sizeof(float)];
+	size_t datacount;
+	size_t datasize;
+	
 };

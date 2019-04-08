@@ -2,7 +2,13 @@
 # Build Soapy SDR support module for NetSDR
 ########################################################################
 cmake_minimum_required(VERSION 3.1)
+
+#set(CMAKE_CXX_STANDARD 11)
+
+#add_definitions(-std=c++11)
+
 project(SoapyNetSDR CXX)
+
 
 find_package(SoapySDR CONFIG)
 if (NOT SoapySDR_FOUND)
