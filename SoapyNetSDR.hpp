@@ -1,11 +1,8 @@
 
 #pragma once
 #include <SoapySDR/Device.hpp>
-#include "SoapyRPCSocket.hpp"
-#include "SoapyURLUtils.hpp"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <string.h>
+#include "SocketDefs.h"
+#include <cstring>
 #include <mutex>
 
 class SoapyNetSDR : public SoapySDR::Device
@@ -145,36 +142,31 @@ public:
     std::vector<double> listBandwidths(const int direction, const size_t channel) const;
 
     //SoapySDR::RangeList getBandwidthRange(const int direction, const size_t channel) const;
-    
+
    bool transaction( const unsigned char *cmd, size_t size );
 
   	bool transaction( const unsigned char *cmd, size_t size,
                     std::vector< unsigned char > &response );
-   
+
    	bool start();
-   	
+
 	bool stop();
 
 	void apply_channel( unsigned char *cmd, size_t chan );
-	
+
 	int processUPD(float *data);
- 
- 
-#ifndef SOCKET
-#define SOCKET int
-#endif
-   
+
 SOCKET _tcp;
 SOCKET _udp;
-   
+
 struct sockaddr_in host_sa; /* local address */
 
 private:
     //sockets here
-    
+
     	mutable std::mutex	_device_mutex;
     	std::mutex	_tcp_lock;
-    	
+
 
   enum radio_type
   {
@@ -195,11 +187,11 @@ private:
   size_t _nchan;
   double _sample_rate;
   double _bandwidth;
-  
+
   SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
 
 	float datasave[256*2*sizeof(float)];
 	size_t datacount;
 	size_t datasize;
-	
+
 };

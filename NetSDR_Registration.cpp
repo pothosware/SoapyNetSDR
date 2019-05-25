@@ -1,24 +1,6 @@
 #include "SoapyNetSDR.hpp"
 #include <SoapySDR/Registry.hpp>
-#include <stdio.h>
-
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#include <termios.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <libgen.h> /* basename */
-
-
+#include <cstdio>
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -26,8 +8,14 @@
 #include <cerrno>
 #include <vector>
 
+#ifdef _MSC_VER
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+#else
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
+
 /* discovery protocol internals taken from CuteSDR project */
-typedef struct __attribute__ ((__packed__))
+PACK(typedef struct
 {
   /* 56 fixed common byte fields */
   unsigned char length[2]; 	/* length of total message in bytes (little endian byte order) */
@@ -38,7 +26,7 @@ typedef struct __attribute__ ((__packed__))
   unsigned char ipaddr[16];	/* device IP address (little endian byte order) */
   unsigned char port[2];		/* device Port number (little endian byte order) */
   unsigned char customfield;	/* Specifies a custom data field for a particular device */
-} discover_common_msg_t;
+}) discover_common_msg_t;
 
 /* UDP port numbers for discovery protocol */
 #define DISCOVER_SERVER_PORT 48321	/* PC client Tx port, SDR Server Rx Port */
@@ -49,10 +37,6 @@ typedef struct __attribute__ ((__packed__))
 #define MSG_REQ   0
 #define MSG_RESP  1
 #define MSG_SET   2
-
-#include <net/if.h>
-#include <ifaddrs.h>
-
 
 typedef struct
 {
@@ -74,22 +58,18 @@ std::vector<interfaceInformation> interfaceList();
 
 static std::vector < unit_t > discover_netsdr();
 
-static std::string read_file(const char *filename);
-
-static std::vector < unit_t > discover_sdr_iq();
-
 /***********************************************************************
  * Find available devices
  **********************************************************************/
 static SoapySDR::KwargsList find_netSDR(const SoapySDR::Kwargs &args)
 {
     SoapySDR::KwargsList results;
- 	
+
     //locate the device on the system...
     //return a list of 0, 1, or more argument maps that each identify a device
-    
+
     std::vector < unit_t > units = discover_netsdr();
-    
+
     SoapySDR::Kwargs options;
     char buff[256];
     for(unsigned long i=0;i<units.size();++i){
@@ -115,9 +95,9 @@ static SoapySDR::KwargsList find_netSDR(const SoapySDR::Kwargs &args)
 static std::vector < unit_t > discover_netsdr()
 {
 	std::vector < unit_t > units;
-	  
+
   	std::vector<interfaceInformation> list=interfaceList();
-  	
+
   	for(int pass=0;pass<2;++pass){
 		for(size_t n=0;n<list.size();++n){
 			if(pass == 1){
@@ -129,20 +109,20 @@ static std::vector < unit_t > discover_netsdr()
 
 			int sockTx;
 			int sockRx;
-  
+
 
 		  if ( (sockTx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
 			continue;
-	
+
 		  if ( (sockRx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ){
-			close(sockTx);	  
+			closesocket(sockTx);
 			continue;
 		   }
-	   
+
 		  int sockoptval = 1;
-		  setsockopt(sockTx, SOL_SOCKET, SO_REUSEADDR, &sockoptval, sizeof(int));
+		  setsockopt(sockTx, SOL_SOCKET, SO_REUSEADDR, (const char *)&sockoptval, sizeof(int));
 		  sockoptval = 1;
-		  setsockopt(sockTx, SOL_SOCKET, SO_BROADCAST, &sockoptval, sizeof(int));
+		  setsockopt(sockTx, SOL_SOCKET, SO_BROADCAST, (const char *)&sockoptval, sizeof(int));
 
 
 		  struct sockaddr_in host_sa; /* local address */
@@ -154,27 +134,27 @@ static std::vector < unit_t > discover_netsdr()
 		  peer_sa.sin_family = AF_INET;
 		  peer_sa.sin_addr.s_addr = htonl(inet_network(list[n].address.c_str()));
 		  peer_sa.sin_port = htons(DISCOVER_SERVER_PORT);
-  
-  
+
+
 		  /* fill in the server's address and data */
 		  memset((char*)&peer_sa2, 0, sizeof(peer_sa2));
 		  peer_sa2.sin_family = AF_INET;
 		  peer_sa2.sin_addr.s_addr = htonl(inet_network(list[n].broadcast.c_str()));
 		  peer_sa2.sin_port = htons(DISCOVER_SERVER_PORT);
-  
-  
+
+
 
 		  /* fill in the hosts's address and data */
 		  memset(&host_sa, 0, sizeof(host_sa));
 		  host_sa.sin_family = AF_INET;
 		  host_sa.sin_addr.s_addr = htonl(INADDR_ANY);
 		  host_sa.sin_port = htons(DISCOVER_CLIENT_PORT);
-  
-  
+
+
 		   if ( bind(sockTx, (struct sockaddr *)&peer_sa, sizeof(peer_sa)) < 0 )
 		  {
-			close(sockTx);
-			close(sockRx);
+			closesocket(sockTx);
+			closesocket(sockRx);
 			continue;
 		  }
 
@@ -182,8 +162,8 @@ static std::vector < unit_t > discover_netsdr()
 		  {
 			perror("binding datagram sock2");
 			printf("errno %d DISCOVER_SERVER_PORT %d\n",errno,DISCOVER_SERVER_PORT);
-			close(sockTx);
-			close(sockRx);
+			closesocket(sockTx);
+			closesocket(sockRx);
 			continue;
 		  }
 
@@ -191,10 +171,10 @@ static std::vector < unit_t > discover_netsdr()
 
 		  tv.tv_sec = 0;
 		  tv.tv_usec = 100000;
-		  if ( setsockopt(sockRx, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0 )
+		  if ( setsockopt(sockRx, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0 )
 		  {
-			close(sockRx);
-			close(sockTx);
+			closesocket(sockRx);
+			closesocket(sockTx);
 			continue;
 		  }
 
@@ -206,45 +186,45 @@ static std::vector < unit_t > discover_netsdr()
 		  tx_msg.key[0] = KEY0;
 		  tx_msg.key[1] = KEY1;
 		  tx_msg.op = MSG_REQ;
- 
-		  sendto(sockTx, &tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa, sizeof(peer_sa));
-		  sendto(sockTx, &tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa2, sizeof(peer_sa2));
-  
+
+		  sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa, sizeof(peer_sa));
+		  sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa2, sizeof(peer_sa2));
+
 		  while ( 1 )
 		  {
 				size_t rx_bytes = 0;
 				unsigned char data[1024*2];
 
 				socklen_t addrlen = sizeof(host_sa);  /* length of addresses */
-		
-				int nbytes = recvfrom(sockRx, data, sizeof(data), 0, (struct sockaddr *)&host_sa, &addrlen);
-		
+
+				int nbytes = recvfrom(sockRx, (char *)data, sizeof(data), 0, (struct sockaddr *)&host_sa, &addrlen);
+
 				if ( nbytes <= 0 )
 					break;
 				rx_bytes = nbytes;
-		
-		
+
+
 				if ( rx_bytes >= sizeof(discover_common_msg_t) )
 				{
 					discover_common_msg_t *rx_msg = (discover_common_msg_t *)data;
 
 					if ( KEY0 == rx_msg->key[0] && KEY1 == rx_msg->key[1]  &&
 					   MSG_RESP == rx_msg->op )
-					{					
-					
+					{
+
 						void *temp = rx_msg->port;
 						uint16_t port = *((uint16_t *)temp);
-					
+
 						std::stringstream buffer;
-					
+
 						buffer << int(rx_msg->ipaddr[3]) << "."
 							   << int(rx_msg->ipaddr[2]) << "."
 							   << int(rx_msg->ipaddr[1]) << "."
 							   << int(rx_msg->ipaddr[0]);
-						   
-						   
+
+
 						std::string addr=buffer.str();
-						   
+
 						//std::cout << "addr " << addr << std::endl;
 
 						unit_t unit;
@@ -255,14 +235,14 @@ static std::vector < unit_t > discover_netsdr()
 						unit.port = port;
 
 						units.push_back( unit );
-					
+
 					}
 				}
-		
+
 			}
-		
-			close(sockTx);
-			close(sockRx);
+
+			closesocket(sockTx);
+			closesocket(sockRx);
 	  }
 	}
 	return units;
@@ -272,11 +252,11 @@ std::vector<interfaceInformation> interfaceList()
 {
 	std::vector<interfaceInformation> list;
 	interfaceInformation c1;
-	
-	struct ifaddrs *addrs,*iloop; 
+
+	struct ifaddrs *addrs,*iloop;
 	char buf[64],buf2[64];
 	struct sockaddr_in *s4;
-	
+
 	getifaddrs(&addrs);
 	for (iloop = addrs; iloop != NULL; iloop = iloop->ifa_next)
 	{
@@ -287,7 +267,7 @@ std::vector<interfaceInformation> interfaceList()
 		}else{
 			continue;
 		}
-		
+
 		s4 = (struct sockaddr_in *)(iloop->ifa_dstaddr);
 		buf2[0]=0;
 		if(s4){
@@ -295,21 +275,20 @@ std::vector<interfaceInformation> interfaceList()
 		}else{
 			continue;
 		}
-			
-		if(!(iloop->ifa_flags & IFF_UP) || !(iloop->ifa_flags & IFF_BROADCAST))continue;		
-		
+
+		if(!(iloop->ifa_flags & IFF_UP) || !(iloop->ifa_flags & IFF_BROADCAST))continue;
+
 		c1.name = iloop->ifa_name;
-		
+
 		c1.address = buf;
-		
+
 		c1.broadcast = buf2;
-		
+
 		list.push_back(c1);
-		
-	}  
-	
+
+	}
+
 	freeifaddrs(addrs);
-	
 	return list;
 }
 

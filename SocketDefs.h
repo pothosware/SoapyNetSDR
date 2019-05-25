@@ -1,6 +1,7 @@
-// Copyright (c) 2015-2017 Josh Blum
+// Copyright (c) 2015-2019 Josh Blum
 // SPDX-License-Identifier: BSL-1.0
 
+// ** Modified from SoapyRemote/common/SoapySocketDefs.hpp
 // ** This header should be included first, to avoid compile errors.
 // ** At least in the case of the windows header files.
 
@@ -9,74 +10,69 @@
 // And providing various typedefs and definitions when missing.
 
 #pragma once
+#ifndef __has_include
+#error "Compiler missing __has_include macro!"
+#endif
 
 /***********************************************************************
  * Windows socket headers
  **********************************************************************/
-#cmakedefine HAS_WINSOCK2_H
-#ifdef HAS_WINSOCK2_H
+#if __has_include(<winsock2.h>)
 #include <winsock2.h> //htonll
-#endif //HAS_WINSOCK2_H
+#endif
 
-#cmakedefine HAS_WS2TCPIP_H
-#ifdef HAS_WS2TCPIP_H
+#if __has_include(<ws2tcpip.h>)
 #include <ws2tcpip.h> //addrinfo
 typedef int socklen_t;
-#endif //HAS_WS2TCPIP_H
+#endif
+
+#if __has_include(<io.h>)
+#include <io.h> //read/write
+#endif
 
 /***********************************************************************
  * unix socket headers
  **********************************************************************/
-#cmakedefine HAS_UNISTD_H
-#ifdef HAS_UNISTD_H
+#if __has_include(<unistd.h>)
 #include <unistd.h> //close
 #define closesocket close
-#endif //HAS_UNISTD_H
+#endif
 
-#cmakedefine HAS_NETDB_H
-#ifdef HAS_NETDB_H
+#if __has_include(<netdb.h>)
 #include <netdb.h> //addrinfo
-#endif //HAS_NETDB_H
+#endif
 
-#cmakedefine HAS_NETINET_IN_H
-#ifdef HAS_NETINET_IN_H
+#if __has_include(<netinet/in.h>)
 #include <netinet/in.h>
-#endif //HAS_NETINET_IN_H
+#endif
 
-#cmakedefine HAS_NETINET_TCP_H
-#ifdef HAS_NETINET_TCP_H
+#if __has_include(<netinet/tcp.h>)
 #include <netinet/tcp.h>
-#endif //HAS_NETINET_TCP_H
+#endif
 
-#cmakedefine HAS_SYS_TYPES_H
-#ifdef HAS_SYS_TYPES_H
+#if __has_include(<sys/types.h>)
 #include <sys/types.h>
-#endif //HAS_SYS_TYPES_H
+#endif
 
-#cmakedefine HAS_SYS_SOCKET_H
-#ifdef HAS_SYS_SOCKET_H
+#if __has_include(<sys/socket.h>)
 #include <sys/socket.h>
-#endif //HAS_SYS_SOCKET_H
+#endif
 
-#cmakedefine HAS_ARPA_INET_H
-#ifdef HAS_ARPA_INET_H
+#if __has_include(<arpa/inet.h>)
 #include <arpa/inet.h> //inet_ntop
-#endif //HAS_ARPA_INET_H
+#endif
 
-#cmakedefine HAS_IFADDRS_H
-#ifdef HAS_IFADDRS_H
+#if __has_include(<ifaddrs.h>)
 #include <ifaddrs.h> //getifaddrs
-#endif //HAS_IFADDRS_H
+#endif
 
-#cmakedefine HAS_NET_IF_H
-#ifdef HAS_NET_IF_H
+#if __has_include(<net/if.h>)
 #include <net/if.h> //if_nametoindex
-#endif //HAS_NET_IF_H
+#endif
 
-#cmakedefine HAS_FCNTL_H
-#ifdef HAS_FCNTL_H
+#if __has_include(<fcntl.h>)
 #include <fcntl.h> //fcntl and constants
-#endif //HAS_FCNTL_H
+#endif
 
 /***********************************************************************
  * htonll and ntohll for GCC
@@ -104,6 +100,10 @@ typedef int socklen_t;
 #define INVALID_SOCKET -1
 #endif //INVALID_SOCKET
 
+#ifndef SOCKET
+#define SOCKET int
+#endif //SOCKET
+
 /***********************************************************************
  * socket errno
  **********************************************************************/
@@ -118,12 +118,8 @@ typedef int socklen_t;
 #endif
 
 /***********************************************************************
- * OSX compatibility
+ * socket flag definitions
  **********************************************************************/
-#if !defined(IPV6_ADD_MEMBERSHIP) && defined(IPV6_JOIN_GROUP)
-#define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
-#endif
-
-#if !defined(IPV6_DROP_MEMBERSHIP) && defined(IPV6_LEAVE_GROUP)
-#define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
 #endif
