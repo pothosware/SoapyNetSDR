@@ -32,6 +32,8 @@ PACK(typedef struct
 #define DISCOVER_SERVER_PORT 48321	/* PC client Tx port, SDR Server Rx Port */
 #define DISCOVER_CLIENT_PORT 48322	/* PC client Rx port, SDR Server Tx Port */
 
+#define DISCOVER_TIMEOUT_MS 100
+
 #define KEY0      0x5A
 #define KEY1      0xA5
 #define MSG_REQ   0
@@ -159,10 +161,13 @@ static std::vector < unit_t > discover_netsdr()
 			continue;
 		  }
 
+		  #ifdef _MSC_VER
+		  DWORD tv = DISCOVER_TIMEOUT_MS; //windows uses DWORD timeout in ms
+		  #else
 		  struct timeval tv;
-
 		  tv.tv_sec = 0;
-		  tv.tv_usec = 100000;
+		  tv.tv_usec = DISCOVER_TIMEOUT_MS*1000;
+		  #endif
 		  if ( setsockopt(sockRx, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0 )
 		  {
 			closesocket(sockRx);
