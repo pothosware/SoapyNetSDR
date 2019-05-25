@@ -5,6 +5,23 @@
 #include <cstring>
 #include <mutex>
 
+struct SoapyNetSDR_SocketInit
+{
+    SoapyNetSDR_SocketInit(void)
+    {
+        #ifdef _MSC_VER
+        WSADATA wsaData;
+        WSAStartup(MAKEWORD(2, 2), &wsaData);
+        #endif
+    }
+    ~SoapyNetSDR_SocketInit(void)
+    {
+        #ifdef _MSC_VER
+        WSACleanup();
+        #endif
+    }
+};
+
 class SoapyNetSDR : public SoapySDR::Device
 {
 public:
@@ -162,11 +179,10 @@ SOCKET _udp;
 struct sockaddr_in host_sa; /* local address */
 
 private:
-    //sockets here
+    SoapyNetSDR_SocketInit socket_init;
 
-    	mutable std::mutex	_device_mutex;
-    	std::mutex	_tcp_lock;
-
+    mutable std::mutex	_device_mutex;
+    std::mutex	_tcp_lock;
 
   enum radio_type
   {

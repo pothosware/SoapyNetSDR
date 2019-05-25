@@ -63,6 +63,8 @@ static std::vector < unit_t > discover_netsdr();
  **********************************************************************/
 static SoapySDR::KwargsList find_netSDR(const SoapySDR::Kwargs &args)
 {
+    SoapyNetSDR_SocketInit socket_init;
+
     SoapySDR::KwargsList results;
 
     //locate the device on the system...
