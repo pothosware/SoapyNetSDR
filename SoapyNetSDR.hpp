@@ -22,6 +22,16 @@ struct SoapyNetSDR_SocketInit
     }
 };
 
+class interfaceInformation{
+
+public:
+	std::string name;
+	std::string address;
+	std::string broadcast;
+};
+
+std::vector<interfaceInformation> interfaceList();
+
 class SoapyNetSDR : public SoapySDR::Device
 {
 public:

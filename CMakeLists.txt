@@ -22,3 +22,10 @@ SOAPY_SDR_MODULE_UTIL(
 if (WIN32)
     target_link_libraries(netSDRSupport PRIVATE ws2_32)
 endif (WIN32)
+
+#network interface enumeration
+if (WIN32)
+    target_sources(netSDRSupport PRIVATE InterfacesWindows.cpp)
+else ()
+    target_sources(netSDRSupport PRIVATE InterfacesUnix.cpp)
+endif ()

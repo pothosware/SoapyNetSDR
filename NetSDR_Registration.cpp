@@ -46,16 +46,6 @@ typedef struct
   uint16_t port;
 } unit_t;
 
-class interfaceInformation{
-
-public:
-	std::string name;
-	std::string address;
-	std::string broadcast;
-};
-
-std::vector<interfaceInformation> interfaceList();
-
 static std::vector < unit_t > discover_netsdr();
 
 /***********************************************************************
@@ -134,14 +124,14 @@ static std::vector < unit_t > discover_netsdr()
 		  /* fill in the server's address and data */
 		  memset((char*)&peer_sa, 0, sizeof(peer_sa));
 		  peer_sa.sin_family = AF_INET;
-		  peer_sa.sin_addr.s_addr = htonl(inet_network(list[n].address.c_str()));
+		  inet_pton(AF_INET, list[n].address.c_str(), &peer_sa.sin_addr);
 		  peer_sa.sin_port = htons(DISCOVER_SERVER_PORT);
 
 
 		  /* fill in the server's address and data */
 		  memset((char*)&peer_sa2, 0, sizeof(peer_sa2));
 		  peer_sa2.sin_family = AF_INET;
-		  peer_sa2.sin_addr.s_addr = htonl(inet_network(list[n].broadcast.c_str()));
+		  inet_pton(AF_INET, list[n].broadcast.c_str(), &peer_sa2.sin_addr);
 		  peer_sa2.sin_port = htons(DISCOVER_SERVER_PORT);
 
 
@@ -248,50 +238,6 @@ static std::vector < unit_t > discover_netsdr()
 	  }
 	}
 	return units;
-}
-
-std::vector<interfaceInformation> interfaceList()
-{
-	std::vector<interfaceInformation> list;
-	interfaceInformation c1;
-
-	struct ifaddrs *addrs,*iloop;
-	char buf[64],buf2[64];
-	struct sockaddr_in *s4;
-
-	getifaddrs(&addrs);
-	for (iloop = addrs; iloop != NULL; iloop = iloop->ifa_next)
-	{
-		s4 = (struct sockaddr_in *)(iloop->ifa_addr);
-		buf[0]=0;
-		if(s4){
-			inet_ntop(iloop->ifa_addr->sa_family, (void *)&(s4->sin_addr), buf, sizeof(buf));
-		}else{
-			continue;
-		}
-
-		s4 = (struct sockaddr_in *)(iloop->ifa_dstaddr);
-		buf2[0]=0;
-		if(s4){
-			inet_ntop(iloop->ifa_dstaddr->sa_family, (void *)&(s4->sin_addr), buf2, sizeof(buf2));
-		}else{
-			continue;
-		}
-
-		if(!(iloop->ifa_flags & IFF_UP) || !(iloop->ifa_flags & IFF_BROADCAST))continue;
-
-		c1.name = iloop->ifa_name;
-
-		c1.address = buf;
-
-		c1.broadcast = buf2;
-
-		list.push_back(c1);
-
-	}
-
-	freeifaddrs(addrs);
-	return list;
 }
 
 /***********************************************************************
