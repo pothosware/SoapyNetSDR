@@ -201,7 +201,19 @@ int SoapyNetSDR::readStream(
 	long long &timeNs,
 	const long timeoutUs )
 {
+	//fill in the select structures
+	struct timeval tv;
+	tv.tv_sec = timeoutUs / 1000000;
+	tv.tv_usec = timeoutUs % 1000000;
 
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(_udp, &fds);
+
+	//wait for timeout
+	int ret = ::select(_udp+1, NULL, &fds, NULL, &tv);
+	if (ret < 0) return SOAPY_SDR_STREAM_ERROR;
+	if (ret == 0) return SOAPY_SDR_TIMEOUT;
 
 	float *out=(float *)buffs[0];
 
