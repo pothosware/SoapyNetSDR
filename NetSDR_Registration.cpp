@@ -94,9 +94,42 @@ static std::vector < unit_t > discover_netsdr()
 {
 	std::vector < unit_t > units;
 
-  	std::vector<interfaceInformation> list=interfaceList();
+	std::vector<interfaceInformation> list=interfaceList();
 
-  	for(int pass=0;pass<2;++pass){
+	/* fill in the hosts's address and data */
+	struct sockaddr_in host_sa; /* local address */
+	memset(&host_sa, 0, sizeof(host_sa));
+	host_sa.sin_family = AF_INET;
+	host_sa.sin_addr.s_addr = htonl(INADDR_ANY);
+	host_sa.sin_port = htons(DISCOVER_CLIENT_PORT);
+
+	int sockRx;
+	if ( (sockRx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ){
+		return units;
+	}
+
+	if ( bind(sockRx, (struct sockaddr *)&host_sa, sizeof(host_sa)) < 0 )
+	{
+		perror("binding datagram sock2");
+		printf("errno %d DISCOVER_SERVER_PORT %d\n",errno,DISCOVER_SERVER_PORT);
+		closesocket(sockRx);
+		return units;
+	}
+
+	#ifdef _MSC_VER
+	DWORD tv = DISCOVER_TIMEOUT_MS; //windows uses DWORD timeout in ms
+	#else
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = DISCOVER_TIMEOUT_MS*1000;
+	#endif
+	if ( setsockopt(sockRx, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0 )
+	{
+		closesocket(sockRx);
+		return units;
+	}
+
+	for(int pass=0;pass<2;++pass){
 		for(size_t n=0;n<list.size();++n){
 			if(pass == 1){
 				list[n].broadcast="255.255.255.255";
@@ -106,146 +139,107 @@ static std::vector < unit_t > discover_netsdr()
 			//std::cout << "broadcast " <<  list[n].broadcast << std::endl;
 
 			int sockTx;
-			int sockRx;
 
 
-		  if ( (sockTx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
+			if ( (sockTx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )
 			continue;
 
-		  if ( (sockRx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ){
-			closesocket(sockTx);
-			continue;
-		   }
-
-		  int sockoptval = 1;
-		  setsockopt(sockTx, SOL_SOCKET, SO_REUSEADDR, (const char *)&sockoptval, sizeof(int));
-		  sockoptval = 1;
-		  setsockopt(sockTx, SOL_SOCKET, SO_BROADCAST, (const char *)&sockoptval, sizeof(int));
+			int sockoptval = 1;
+			setsockopt(sockTx, SOL_SOCKET, SO_REUSEADDR, (const char *)&sockoptval, sizeof(int));
+			sockoptval = 1;
+			setsockopt(sockTx, SOL_SOCKET, SO_BROADCAST, (const char *)&sockoptval, sizeof(int));
 
 
-		  struct sockaddr_in host_sa; /* local address */
-		  struct sockaddr_in peer_sa; /* remote address */
-		  struct sockaddr_in peer_sa2; /* remote address */
+			struct sockaddr_in peer_sa; /* remote address */
+			struct sockaddr_in peer_sa2; /* remote address */
 
-		  /* fill in the server's address and data */
-		  memset((char*)&peer_sa, 0, sizeof(peer_sa));
-		  peer_sa.sin_family = AF_INET;
-		  inet_pton(AF_INET, list[n].address.c_str(), &peer_sa.sin_addr);
-		  peer_sa.sin_port = htons(DISCOVER_SERVER_PORT);
-
-
-		  /* fill in the server's address and data */
-		  memset((char*)&peer_sa2, 0, sizeof(peer_sa2));
-		  peer_sa2.sin_family = AF_INET;
-		  inet_pton(AF_INET, list[n].broadcast.c_str(), &peer_sa2.sin_addr);
-		  peer_sa2.sin_port = htons(DISCOVER_SERVER_PORT);
+			/* fill in the server's address and data */
+			memset((char*)&peer_sa, 0, sizeof(peer_sa));
+			peer_sa.sin_family = AF_INET;
+			inet_pton(AF_INET, list[n].address.c_str(), &peer_sa.sin_addr);
+			peer_sa.sin_port = htons(DISCOVER_SERVER_PORT);
 
 
+			/* fill in the server's address and data */
+			memset((char*)&peer_sa2, 0, sizeof(peer_sa2));
+			peer_sa2.sin_family = AF_INET;
+			inet_pton(AF_INET, list[n].broadcast.c_str(), &peer_sa2.sin_addr);
+			peer_sa2.sin_port = htons(DISCOVER_SERVER_PORT);
 
-		  /* fill in the hosts's address and data */
-		  memset(&host_sa, 0, sizeof(host_sa));
-		  host_sa.sin_family = AF_INET;
-		  host_sa.sin_addr.s_addr = htonl(INADDR_ANY);
-		  host_sa.sin_port = htons(DISCOVER_CLIENT_PORT);
-
-
-		   if ( bind(sockTx, (struct sockaddr *)&peer_sa, sizeof(peer_sa)) < 0 )
-		  {
-			closesocket(sockTx);
-			closesocket(sockRx);
-			continue;
-		  }
-
-		   if ( bind(sockRx, (struct sockaddr *)&host_sa, sizeof(host_sa)) < 0 )
-		  {
-			perror("binding datagram sock2");
-			printf("errno %d DISCOVER_SERVER_PORT %d\n",errno,DISCOVER_SERVER_PORT);
-			closesocket(sockTx);
-			closesocket(sockRx);
-			continue;
-		  }
-
-		  #ifdef _MSC_VER
-		  DWORD tv = DISCOVER_TIMEOUT_MS; //windows uses DWORD timeout in ms
-		  #else
-		  struct timeval tv;
-		  tv.tv_sec = 0;
-		  tv.tv_usec = DISCOVER_TIMEOUT_MS*1000;
-		  #endif
-		  if ( setsockopt(sockRx, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0 )
-		  {
-			closesocket(sockRx);
-			closesocket(sockTx);
-			continue;
-		  }
-
-		  discover_common_msg_t tx_msg;
-		  memset( (void *)&tx_msg, 0, sizeof(discover_common_msg_t) );
-
-		  tx_msg.length[0] = sizeof(discover_common_msg_t);
-		  tx_msg.length[1] = sizeof(discover_common_msg_t) >> 8;
-		  tx_msg.key[0] = KEY0;
-		  tx_msg.key[1] = KEY1;
-		  tx_msg.op = MSG_REQ;
-
-		  sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa, sizeof(peer_sa));
-		  sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa2, sizeof(peer_sa2));
-
-		  while ( 1 )
-		  {
-				size_t rx_bytes = 0;
-				unsigned char data[1024*2];
-
-				socklen_t addrlen = sizeof(host_sa);  /* length of addresses */
-
-				int nbytes = recvfrom(sockRx, (char *)data, sizeof(data), 0, (struct sockaddr *)&host_sa, &addrlen);
-
-				if ( nbytes <= 0 )
-					break;
-				rx_bytes = nbytes;
-
-
-				if ( rx_bytes >= sizeof(discover_common_msg_t) )
-				{
-					discover_common_msg_t *rx_msg = (discover_common_msg_t *)data;
-
-					if ( KEY0 == rx_msg->key[0] && KEY1 == rx_msg->key[1]  &&
-					   MSG_RESP == rx_msg->op )
-					{
-
-						void *temp = rx_msg->port;
-						uint16_t port = *((uint16_t *)temp);
-
-						std::stringstream buffer;
-
-						buffer << int(rx_msg->ipaddr[3]) << "."
-							   << int(rx_msg->ipaddr[2]) << "."
-							   << int(rx_msg->ipaddr[1]) << "."
-							   << int(rx_msg->ipaddr[0]);
-
-
-						std::string addr=buffer.str();
-
-						//std::cout << "addr " << addr << std::endl;
-
-						unit_t unit;
-
-						unit.name = rx_msg->name;
-						unit.sn = rx_msg->sn;
-						unit.addr = addr;
-						unit.port = port;
-
-						units.push_back( unit );
-
-					}
-				}
-
+			if ( bind(sockTx, (struct sockaddr *)&peer_sa, sizeof(peer_sa)) < 0 )
+			{
+				closesocket(sockTx);
+				continue;
 			}
 
+			discover_common_msg_t tx_msg;
+			memset( (void *)&tx_msg, 0, sizeof(discover_common_msg_t) );
+
+			tx_msg.length[0] = sizeof(discover_common_msg_t);
+			tx_msg.length[1] = sizeof(discover_common_msg_t) >> 8;
+			tx_msg.key[0] = KEY0;
+			tx_msg.key[1] = KEY1;
+			tx_msg.op = MSG_REQ;
+
+			sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa, sizeof(peer_sa));
+			sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa2, sizeof(peer_sa2));
+
 			closesocket(sockTx);
-			closesocket(sockRx);
 	  }
 	}
+
+	while ( 1 )
+	{
+		size_t rx_bytes = 0;
+		unsigned char data[1024*2];
+
+		socklen_t addrlen = sizeof(host_sa);  /* length of addresses */
+
+		int nbytes = recvfrom(sockRx, (char *)data, sizeof(data), 0, (struct sockaddr *)&host_sa, &addrlen);
+
+		if ( nbytes <= 0 )
+			break;
+		rx_bytes = nbytes;
+
+
+		if ( rx_bytes >= sizeof(discover_common_msg_t) )
+		{
+			discover_common_msg_t *rx_msg = (discover_common_msg_t *)data;
+
+			if ( KEY0 == rx_msg->key[0] && KEY1 == rx_msg->key[1]  &&
+			   MSG_RESP == rx_msg->op )
+			{
+
+				void *temp = rx_msg->port;
+				uint16_t port = *((uint16_t *)temp);
+
+				std::stringstream buffer;
+
+				buffer << int(rx_msg->ipaddr[3]) << "."
+					   << int(rx_msg->ipaddr[2]) << "."
+					   << int(rx_msg->ipaddr[1]) << "."
+					   << int(rx_msg->ipaddr[0]);
+
+
+				std::string addr=buffer.str();
+
+				//std::cout << "addr " << addr << std::endl;
+
+				unit_t unit;
+
+				unit.name = rx_msg->name;
+				unit.sn = rx_msg->sn;
+				unit.addr = addr;
+				unit.port = port;
+
+				units.push_back( unit );
+
+			}
+		}
+
+	}
+	closesocket(sockRx);
+
 	return units;
 }
 
