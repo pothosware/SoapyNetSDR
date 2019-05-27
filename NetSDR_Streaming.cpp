@@ -17,18 +17,6 @@ SoapySDR::Stream *SoapyNetSDR::setupStream(
 	// fprintf(stderr,"setupStream direction %d format %s channels %lu args %lu\n",direction,format.c_str(),
 	              // channels.size(),args.size());
 
-	struct timeval tv;
-
-	tv.tv_sec = 0;
-	tv.tv_usec = 100000;
-	if ( setsockopt(_udp, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv)) < 0 )
-	{
-		fprintf(stderr,"rsetsockopt failed errno %d\n",errno);
-		return NULL;
-	}
-
-	//launchThread((void *)this,ProcessUPD);
-
 	return RX_STREAM;
 }
 
