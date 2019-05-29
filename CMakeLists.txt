@@ -3,20 +3,12 @@
 ########################################################################
 cmake_minimum_required(VERSION 3.1)
 
-#set(CMAKE_CXX_STANDARD 11)
-
-#add_definitions(-std=c++11)
-
 project(SoapyNetSDR CXX)
-
 
 find_package(SoapySDR CONFIG)
 if (NOT SoapySDR_FOUND)
     message(FATAL_ERROR "Soapy SDR development files not found...")
 endif ()
-
-add_subdirectory(SoapyRemoteLibs)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/SoapyRemoteLibs)
 
 SOAPY_SDR_MODULE_UTIL(
     TARGET netSDRSupport
@@ -24,5 +16,16 @@ SOAPY_SDR_MODULE_UTIL(
         NetSDR_Registration.cpp
         NetSDR_Settings.cpp
         NetSDR_Streaming.cpp
-    LIBRARIES SoapyRemoteLibs
 )
+
+#network libraries
+if (WIN32)
+    target_link_libraries(netSDRSupport PRIVATE ws2_32)
+endif (WIN32)
+
+#network interface enumeration
+if (WIN32)
+    target_sources(netSDRSupport PRIVATE InterfacesWindows.cpp)
+else ()
+    target_sources(netSDRSupport PRIVATE InterfacesUnix.cpp)
+endif ()
