@@ -79,7 +79,7 @@ typedef int socklen_t;
 #define INVALID_SOCKET -1
 #endif //INVALID_SOCKET
 
-#ifndef SOCKET
+#ifndef _MSC_VER
 #define SOCKET int
 #endif //SOCKET
 

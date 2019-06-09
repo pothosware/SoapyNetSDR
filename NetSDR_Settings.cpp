@@ -706,7 +706,7 @@ fprintf(stderr,"getFrequencyRange in \n");
     }
   }
 
-fprintf(stderr,"getFrequencyRange out %lu\n",list.size());
+fprintf(stderr,"getFrequencyRange out %zu\n",list.size());
 
 	return(list);
 }

@@ -5,6 +5,13 @@ cmake_minimum_required(VERSION 3.1)
 
 project(SoapyNetSDR CXX)
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+
+    #disable warnings for unused parameters
+    add_definitions(-Wno-unused-parameter)
+
+endif(CMAKE_COMPILER_IS_GNUCXX)
+
 find_package(SoapySDR CONFIG)
 if (NOT SoapySDR_FOUND)
     message(FATAL_ERROR "Soapy SDR development files not found...")
