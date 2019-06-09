@@ -299,10 +299,10 @@ bool SoapyNetSDR::transaction( const unsigned char *cmd, size_t size,
     std::lock_guard<std::mutex> lock(_tcp_lock);
 
 
-    if ( write(_tcp, cmd, size) != (int)size )
+    if ( send(_tcp, (const char *)cmd, size, 0) != (int)size )
       return false;
 
-    int nbytes = read(_tcp, data, 2); /* read header */
+    int nbytes = recv(_tcp, (char *)data, 2, 0); /* read header */
     if ( nbytes != 2 )
       return false;
 
@@ -313,7 +313,7 @@ bool SoapyNetSDR::transaction( const unsigned char *cmd, size_t size,
 
     length -= 2; /* subtract header size */
 
-    nbytes = read(_tcp, &data[2], length); /* read payload */
+    nbytes = recv(_tcp, (char *)&data[2], length, 0); /* read payload */
     if ( nbytes != length )
       return false;
 
