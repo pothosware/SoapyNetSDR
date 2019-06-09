@@ -12,7 +12,7 @@
 #define DEFAULT_HOST  "127.0.0.1" /* We assume a running "siqs" from CuteSDR project */
 #define DEFAULT_PORT  50000
 
-static int connectToServer(char *serverName,unsigned short *Port);
+static SOCKET connectToServer(char *serverName,unsigned short *Port);
 
 SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
 {
@@ -46,7 +46,7 @@ SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
 	_tcp=(SOCKET)connectToServer((char *)host.c_str(),&Port);
     if(_tcp == -1){
       fprintf(stderr,"connect failed\n");
-      throw std::runtime_error(std::string(strerror(errno)));
+      throw std::runtime_error(socket_strerror(SOCKET_ERRNO));
 	}
 
 
@@ -69,7 +69,7 @@ SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
     {
       closesocket(_tcp);
       closesocket(_udp);
-      throw std::runtime_error("Bind of UDP socket failed: " + std::string(strerror(errno)));
+      throw std::runtime_error("Bind of UDP socket failed: " + std::string(socket_strerror(SOCKET_ERRNO)));
     }
 
 
@@ -191,11 +191,12 @@ static int copyl(char *p1,char *p2,long n)
 	return 0;
 }
 
-static int connectToServer(char *serverName,unsigned short *Port)
+static SOCKET connectToServer(char *serverName,unsigned short *Port)
 {
 	struct sockaddr_in serverSocketAddr;
 	struct hostent *serverHostEnt;
-	int toServerSocket,ret;
+	SOCKET toServerSocket;
+	int ret;
 	unsigned int hostAddr;
 	unsigned int oneNeg;
 	short result,Try;
@@ -238,7 +239,7 @@ static int connectToServer(char *serverName,unsigned short *Port)
 	Try=0;
 	while(Try++ < 10){
 	    if((toServerSocket=socket(AF_INET,SOCK_STREAM,0)) < 0){
-            printf("socket Error  (%ld)\n",(long)errno);
+            printf("socket Error  (%ld)\n",(long)SOCKET_ERRNO);
 	        return toServerSocket;
 	    }
 
@@ -248,13 +249,13 @@ static int connectToServer(char *serverName,unsigned short *Port)
 
 	    ret=connect(toServerSocket,(struct sockaddr *)&serverSocketAddr,sizeof(serverSocketAddr));
 	    if(ret == -1){
-                if (errno == ECONNREFUSED)  {
+                if (SOCKET_ERRNO == SOCKET_ECONNREFUSED)  {
                     printf("Connection Refused  Try(%d)\n",Try);
                     closesocket(toServerSocket);
                     std::this_thread::sleep_for(std::chrono::seconds(4));
                     continue;
                 }else{
-                    printf("Connection Error  (%ld)\n",(long)errno);
+                    printf("Connection Error  (%ld)\n",(long)SOCKET_ERRNO);
                     return ret;
                 }
 	    }

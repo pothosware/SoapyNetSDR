@@ -90,10 +90,19 @@ typedef int socklen_t;
 #define SOCKET_ERRNO WSAGetLastError()
 #define SOCKET_EINPROGRESS WSAEWOULDBLOCK
 #define SOCKET_ETIMEDOUT WSAETIMEDOUT
+#define SOCKET_ECONNREFUSED WSAECONNREFUSED
+static inline const char *socket_strerror(const int err)
+{
+    static thread_local char buff[1024];
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buff, sizeof(buff), NULL);
+    return buff;
+}
 #else
 #define SOCKET_ERRNO errno
 #define SOCKET_EINPROGRESS EINPROGRESS
 #define SOCKET_ETIMEDOUT ETIMEDOUT
+#define SOCKET_ECONNREFUSED ECONNREFUSED
+#define socket_strerror strerror
 #endif
 
 /***********************************************************************
