@@ -10,29 +10,26 @@
 // And providing various typedefs and definitions when missing.
 
 #pragma once
-#ifndef __has_include
-#error "Compiler missing __has_include macro!"
-#endif
 
 /***********************************************************************
  * Windows socket headers
  **********************************************************************/
-#if __has_include(<winsock2.h>)
+#ifdef _MSC_VER
 #include <winsock2.h> //htonll
-#endif
 
-#if __has_include(<ws2tcpip.h>)
 #include <ws2tcpip.h> //addrinfo
 typedef int socklen_t;
-#endif
 
-#if __has_include(<io.h>)
 #include <io.h> //read/write
-#endif
+#else
 
 /***********************************************************************
  * unix socket headers
  **********************************************************************/
+#ifndef __has_include
+#error "Compiler missing __has_include macro!"
+#endif
+
 #if __has_include(<unistd.h>)
 #include <unistd.h> //close
 #define closesocket close
@@ -72,6 +69,7 @@ typedef int socklen_t;
 
 #if __has_include(<fcntl.h>)
 #include <fcntl.h> //fcntl and constants
+#endif
 #endif
 
 /***********************************************************************
