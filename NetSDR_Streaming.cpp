@@ -171,7 +171,7 @@ int SoapyNetSDR::activateStream(
 	std::lock_guard<std::mutex> lock(_device_mutex);
 
 
-	fprintf(stderr,"activateStream + start %p %d %lld %lu\n",stream,flags,timeNs,numElems);
+	fprintf(stderr,"activateStream + start %p %d %lld %zu\n",stream,flags,timeNs,numElems);
 
 	datacount=0;
 

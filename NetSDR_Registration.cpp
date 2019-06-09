@@ -103,7 +103,7 @@ static std::vector < unit_t > discover_netsdr()
 	host_sa.sin_addr.s_addr = htonl(INADDR_ANY);
 	host_sa.sin_port = htons(DISCOVER_CLIENT_PORT);
 
-	int sockRx;
+	SOCKET sockRx;
 	if ( (sockRx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ){
 		return units;
 	}
@@ -111,7 +111,7 @@ static std::vector < unit_t > discover_netsdr()
 	if ( bind(sockRx, (struct sockaddr *)&host_sa, sizeof(host_sa)) < 0 )
 	{
 		perror("binding datagram sock2");
-		printf("errno %d DISCOVER_SERVER_PORT %d\n",errno,DISCOVER_SERVER_PORT);
+		printf("errno %d DISCOVER_SERVER_PORT %d\n",SOCKET_ERRNO,DISCOVER_SERVER_PORT);
 		closesocket(sockRx);
 		return units;
 	}
@@ -138,7 +138,7 @@ static std::vector < unit_t > discover_netsdr()
 			//std::cout << "address " <<  list[n].address << std::endl;
 			//std::cout << "broadcast " <<  list[n].broadcast << std::endl;
 
-			int sockTx;
+			SOCKET sockTx;
 
 
 			if ( (sockTx = socket(AF_INET, SOCK_DGRAM, 0)) < 0 )

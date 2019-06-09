@@ -10,29 +10,26 @@
 // And providing various typedefs and definitions when missing.
 
 #pragma once
-#ifndef __has_include
-#error "Compiler missing __has_include macro!"
-#endif
 
 /***********************************************************************
  * Windows socket headers
  **********************************************************************/
-#if __has_include(<winsock2.h>)
+#ifdef _MSC_VER
 #include <winsock2.h> //htonll
-#endif
 
-#if __has_include(<ws2tcpip.h>)
 #include <ws2tcpip.h> //addrinfo
 typedef int socklen_t;
-#endif
 
-#if __has_include(<io.h>)
 #include <io.h> //read/write
-#endif
+#else
 
 /***********************************************************************
  * unix socket headers
  **********************************************************************/
+#ifndef __has_include
+#error "Compiler missing __has_include macro!"
+#endif
+
 #if __has_include(<unistd.h>)
 #include <unistd.h> //close
 #define closesocket close
@@ -73,25 +70,7 @@ typedef int socklen_t;
 #if __has_include(<fcntl.h>)
 #include <fcntl.h> //fcntl and constants
 #endif
-
-/***********************************************************************
- * htonll and ntohll for GCC
- **********************************************************************/
-#if defined(__GNUC__) && !defined(htonll)
-    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        #define htonll(x) __builtin_bswap64(x)
-    #else //big endian
-        #define htonll(x) (x)
-    #endif //little endian
-#endif //__GNUC__ and not htonll
-
-#if defined(__GNUC__) && !defined(ntohll)
-    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        #define ntohll(x) __builtin_bswap64(x)
-    #else //big endian
-        #define ntohll(x) (x)
-    #endif //little endian
-#endif //__GNUC__ and not ntohll
+#endif
 
 /***********************************************************************
  * socket type definitions
@@ -100,7 +79,7 @@ typedef int socklen_t;
 #define INVALID_SOCKET -1
 #endif //INVALID_SOCKET
 
-#ifndef SOCKET
+#ifndef _MSC_VER
 #define SOCKET int
 #endif //SOCKET
 
@@ -111,10 +90,19 @@ typedef int socklen_t;
 #define SOCKET_ERRNO WSAGetLastError()
 #define SOCKET_EINPROGRESS WSAEWOULDBLOCK
 #define SOCKET_ETIMEDOUT WSAETIMEDOUT
+#define SOCKET_ECONNREFUSED WSAECONNREFUSED
+static inline const char *socket_strerror(const int err)
+{
+    static thread_local char buff[1024];
+    FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buff, sizeof(buff), NULL);
+    return buff;
+}
 #else
 #define SOCKET_ERRNO errno
 #define SOCKET_EINPROGRESS EINPROGRESS
 #define SOCKET_ETIMEDOUT ETIMEDOUT
+#define SOCKET_ECONNREFUSED ECONNREFUSED
+#define socket_strerror strerror
 #endif
 
 /***********************************************************************
