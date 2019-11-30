@@ -712,7 +712,9 @@ fprintf(stderr,"getFrequencyRange out %zu\n",list.size());
 }
 size_t SoapyNetSDR::getNumChannels( const int dir ) const
 {
-	return(_nchan);
+	if(dir == SOAPY_SDR_RX)return(_nchan);
+	
+	return(0);
 }
 
 bool SoapyNetSDR::getFullDuplex( const int direction, const size_t channel ) const
