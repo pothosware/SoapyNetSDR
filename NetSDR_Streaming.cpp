@@ -16,6 +16,11 @@ SoapySDR::Stream *SoapyNetSDR::setupStream(
 
 	// fprintf(stderr,"setupStream direction %d format %s channels %lu args %lu\n",direction,format.c_str(),
 	              // channels.size(),args.size());
+	              
+	if(direction != SOAPY_SDR_RX)return NULL;
+	
+	if(format != SOAPY_SDR_CF32)return NULL;
+	
 
 	return RX_STREAM;
 }
