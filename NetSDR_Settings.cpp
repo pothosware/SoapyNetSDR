@@ -36,7 +36,7 @@ SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
   _nchan=1;
   _sample_rate=0;
   _bandwidth=0.0;
-
+  _gain=0;
 
 
     std::string host=args.at("netsdr");
@@ -180,7 +180,10 @@ SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
 
     // fprintf(stderr,"mode %d\n",mode);
   }
-
+  
+  getFrequencyRange2(SOAPY_SDR_RX, 0);
+   
+ 
 }
 static int copyl(char *p1,char *p2,long n)
 {
@@ -381,7 +384,7 @@ void SoapyNetSDR::setBandwidth( const int direction, const size_t channel, const
 }
 
 
-void SoapyNetSDR::apply_channel( unsigned char *cmd, size_t chan )
+void SoapyNetSDR::apply_channel( unsigned char *cmd, size_t chan ) const
 {
   unsigned char value = 0;
 
@@ -591,7 +594,8 @@ void SoapyNetSDR::setGain( const int direction, const size_t channel, const doub
     else /* 0 dB */
       atten[sizeof(atten)-1] = 0x00;
   }
-
+	_gain=gain;
+	
   transaction( atten, sizeof(atten) );
 
 
@@ -668,19 +672,28 @@ std::vector<std::string> SoapyNetSDR::listGains( const int direction, const size
 	options.push_back( "ATT" );						// RX: rf_gain
 	return(options);
 }
-SoapySDR::RangeList SoapyNetSDR::getFrequencyRange( const int direction, const size_t channel, const std::string &name )
+SoapySDR::RangeList SoapyNetSDR::getFrequencyRange( const int direction, const size_t channel, const std::string &name ) const
+{
+
+	return(getFrequencyRange(direction,channel));
+}
+SoapySDR::RangeList SoapyNetSDR::getFrequencyRange(const int direction, const size_t channel) const
+{
+
+	return(_list);
+}
+
+SoapySDR::RangeList SoapyNetSDR::getFrequencyRange2( const int direction, const size_t channel, const std::string &name )
 {
 
 	return(getFrequencyRange(direction,channel));
 }
 
-SoapySDR::RangeList SoapyNetSDR::getFrequencyRange(const int direction, const size_t channel)
+SoapySDR::RangeList SoapyNetSDR::getFrequencyRange2(const int direction, const size_t channel)
 {
   /* query freq range(s) of the radio */
 
-  SoapySDR::RangeList list;
 
-fprintf(stderr,"getFrequencyRange in \n");
 
   /* SDR-IP 4.2.2 Receiver Frequency */
   /* NETSDR 4.2.3 Receiver Frequency */
@@ -702,13 +715,11 @@ fprintf(stderr,"getFrequencyRange in \n");
 
       //std::cerr << min << " " << max << " " << vco << std::endl;
 
-          list.push_back(SoapySDR::Range( min, max ) );
+          _list.push_back(SoapySDR::Range( min, max ) );
     }
   }
 
-fprintf(stderr,"getFrequencyRange out %zu\n",list.size());
-
-	return(list);
+	return(_list);
 }
 size_t SoapyNetSDR::getNumChannels( const int dir ) const
 {
@@ -772,25 +783,29 @@ SoapySDR::Range SoapyNetSDR::getGainRange( const int direction, const size_t cha
 {
 	return(SoapySDR::Range( -30.0, 0 ) );
 }
-double SoapyNetSDR::getGain( const int direction, const size_t channel, const std::string &name )
+double SoapyNetSDR::getGain( const int direction, const size_t channel, const std::string &name ) const
 {
 	return(getGain(direction,channel));
 }
 
-double SoapyNetSDR::getGain( const int direction, const size_t channel)
+double SoapyNetSDR::getGain( const int direction, const size_t channel) const
 {
 	std::lock_guard<std::mutex> lock(_device_mutex);
   /* SDR-IQ 5.2.5 RF Gain */
   /* SDR-IP 4.2.3 RF Gain */
   /* NETSDR 4.2.6 RF Gain */
+  
+/*
   unsigned char atten[] = { 0x05, 0x20, 0x38, 0x00, 0x00 };
 
   apply_channel( atten, channel );
 
   std::vector< unsigned char > response;
+  
+    fprintf(stderr,"SoapyNetSDR::getGain gain\n");
 
-  if ( ! transaction( atten, sizeof(atten), response ) )
-    throw std::runtime_error("get_gain failed");
+ if ( ! transaction( atten, sizeof(atten), response ) )
+     throw std::runtime_error("get_gain failed");
 
   unsigned char code = response[response.size()-1];
 
@@ -801,8 +816,9 @@ double SoapyNetSDR::getGain( const int direction, const size_t channel)
 
   if ( RFSPACE_SDR_IQ == _radio )
     gain += 10;
-
-  return gain;
+*/
+ 
+  return _gain;
 }
 double SoapyNetSDR::getSampleRate( const int direction, const size_t channel ) const
 {

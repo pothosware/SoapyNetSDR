@@ -123,9 +123,9 @@ public:
 
     void setGain(const int direction, const size_t channel, const std::string &name, const double value);
 
-    double getGain(const int direction, const size_t channel);
+    double getGain(const int direction, const size_t channel) const;
 
-    double getGain(const int direction, const size_t channel, const std::string &name);
+    double getGain(const int direction, const size_t channel, const std::string &name) const;
 
     SoapySDR::Range getGainRange(const int direction, const size_t channel) const;
 
@@ -144,9 +144,13 @@ public:
 
     std::vector<std::string> listFrequencies(const int direction, const size_t channel) const;
 
-    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel);
+    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel) const;
 
-    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel, const std::string &name);
+    SoapySDR::RangeList getFrequencyRange(const int direction, const size_t channel, const std::string &name) const;
+
+    SoapySDR::RangeList getFrequencyRange2(const int direction, const size_t channel);
+
+    SoapySDR::RangeList getFrequencyRange2(const int direction, const size_t channel, const std::string &name);
 
     /*******************************************************************
      * Sample Rate API
@@ -179,7 +183,7 @@ public:
 
 	bool stop();
 
-	void apply_channel( unsigned char *cmd, size_t chan );
+	void apply_channel( unsigned char *cmd, size_t chan ) const;
 
 	int processUPD(float *data);
 
@@ -213,6 +217,11 @@ private:
   size_t _nchan;
   double _sample_rate;
   double _bandwidth;
+  
+  double _gain;
+  
+  SoapySDR::RangeList _list;
+
 
   SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
 
