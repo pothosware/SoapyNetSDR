@@ -225,7 +225,9 @@ static SOCKET connectToServer(char *serverName,unsigned short *Port)
 	    np += 1;
 	    *Port=(unsigned short)atol(np);
 	}
-	hostAddr=(unsigned int)inet_addr(serverName);
+
+//	hostAddr=(unsigned int)inet_addr(serverName);
+	inet_pton(AF_INET, serverName, &hostAddr);
 	if((long)hostAddr != (long)oneNeg){
 	    serverSocketAddr.sin_addr.s_addr=hostAddr;
 	    printf("Found Address %lx hostAddr %x oneNeg %x diff %x\n",(long)hostAddr,hostAddr,oneNeg,hostAddr-oneNeg);
@@ -302,7 +304,7 @@ bool SoapyNetSDR::transaction( const unsigned char *cmd, size_t size,
     std::lock_guard<std::mutex> lock(_tcp_lock);
 
 
-    if ( send(_tcp, (const char *)cmd, size, 0) != (int)size )
+    if ( send(_tcp, (const char *)cmd, (int)size, 0) != (int)size )
       return false;
 
     int nbytes = recv(_tcp, (char *)data, 2, 0); /* read header */
@@ -409,7 +411,7 @@ void SoapyNetSDR::setFrequency( const int direction, const size_t channel, const
 {
 	std::lock_guard<std::mutex> lock(_device_mutex);
 
-  uint32_t u32_freq = frequency;
+  uint32_t u32_freq = (uint32_t)frequency;
 
   /* SDR-IQ 5.2.2 Receiver Frequency */
   /* SDR-IP 4.2.2 Receiver Frequency */
@@ -431,7 +433,7 @@ void SoapyNetSDR::setFrequency(const int direction, const size_t channel, const 
 {
 	std::lock_guard<std::mutex> lock(_device_mutex);
 
-  uint32_t u32_freq = frequency;
+  uint32_t u32_freq = (uint32_t)frequency;
 
   /* SDR-IQ 5.2.2 Receiver Frequency */
   /* SDR-IP 4.2.2 Receiver Frequency */
@@ -458,7 +460,7 @@ void SoapyNetSDR::setSampleRate( const int direction, const size_t channel, cons
   /* NETSDR 4.2.9 I/Q Output Data Sample Rate */
   unsigned char samprate[] = { 0x09, 0x00, 0xB8, 0x00, 0x00, 0x20, 0xA1, 0x07, 0x00 };
 
-  uint32_t u32_rate = rate;
+  uint32_t u32_rate = (uint32_t)rate;
   samprate[sizeof(samprate)-4] = u32_rate >>  0;
   samprate[sizeof(samprate)-3] = u32_rate >>  8;
   samprate[sizeof(samprate)-2] = u32_rate >> 16;

@@ -194,6 +194,7 @@ int SoapyNetSDR::readStream(
 	long long &timeNs,
 	const long timeoutUs )
 {
+
 	//fill in the select structures
 	struct timeval tv;
 	tv.tv_sec = timeoutUs / 1000000;
@@ -204,7 +205,7 @@ int SoapyNetSDR::readStream(
 	FD_SET(_udp, &fds);
 
 	//wait for timeout
-	int ret = ::select(_udp+1, NULL, &fds, NULL, &tv);
+	int ret = ::select((int)(_udp+1), NULL, &fds, NULL, &tv);
 	if (ret < 0) return SOAPY_SDR_STREAM_ERROR;
 	if (ret == 0) return SOAPY_SDR_TIMEOUT;
 
@@ -213,7 +214,7 @@ int SoapyNetSDR::readStream(
 	size_t nn=numElems;
 
 	if(datacount){
-	    int nd=datasize-datacount;
+		size_t nd=datasize-datacount;
 		//fprintf(stderr,"t numElems %lu datacount %lu nn %lu nd %d datasize %lu \n",numElems,datacount,nn,nd,datasize);
 		for(size_t n=nd;n<datasize;++n){
 		    if(nn == 0)break;
@@ -223,7 +224,7 @@ int SoapyNetSDR::readStream(
 			--datacount;
 		}
 		//fprintf(stderr,"t numElems %lu datacount %lu nn %lu\n",numElems,datacount,nn);
-		if(nn == 0)return numElems;
+		if(nn == 0)return (int)numElems;
 		datacount=0;
 	}
 
@@ -249,7 +250,7 @@ int SoapyNetSDR::readStream(
 		}
 	}
 
-	return numElems;
+	return (int)numElems;
 }
 
 int SoapyNetSDR::deactivateStream(
