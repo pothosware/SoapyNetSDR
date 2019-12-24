@@ -27,6 +27,8 @@ SOAPY_SDR_MODULE_UTIL(
 
 #network libraries
 if (WIN32)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_WINSOCK_DEPRECATED_NO_WARNINGS)
     target_link_libraries(netSDRSupport PRIVATE ws2_32)
 endif (WIN32)
 
