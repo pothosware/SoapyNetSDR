@@ -28,7 +28,8 @@ int SoapyNetSDR::processUDP(float *datao)
 {
 	//fprintf(stderr, "SoapyNetSDR::ProcessUDP\n");
 
-	unsigned char data[(4+1440)*2];
+	// a udp packet has a 4 byte header and 256 x 4 byte or 240 x 6 byte elements (1028/1444 bytes)
+	unsigned char data[4 + 1440];
 
 	socklen_t addrlen = sizeof(host_sa); // length of addresses
 
@@ -178,47 +179,52 @@ int SoapyNetSDR::readStream(
 	long long &timeNs,
 	const long timeoutUs )
 {
-	// fill in the select structures
+	size_t nn = numElems;
+	float *out = (float *)buffs[0];
+
+	// get data from the buffer
+	size_t nd = datasize - datacount;
+	//fprintf(stderr, "t numElems %lu datacount %lu nn %lu nd %d datasize %lu \n", numElems, datacount, nn, nd, datasize);
+	for (size_t n = nd; n < datasize && nn > 0; ++n) {
+		*out++ = datasave[2 * n + 0];
+		*out++ = datasave[2 * n + 1];
+		--nn;
+		--datacount;
+	}
+	//fprintf(stderr, "t numElems %lu datacount %lu nn %lu\n", numElems, datacount, nn);
+	if (nn == 0)
+		return (int)numElems;
+	datacount = 0; // FIXME: not needed, right?
+
+	// wait for a packet if more data is needed
+	// set a timeout value of 1 second
 	struct timeval tv;
 	tv.tv_sec = timeoutUs / 1000000;
 	tv.tv_usec = timeoutUs % 1000000;
 
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(_udp, &fds);
+	// fill in the read fds set with udp socket
+	fd_set readfds;
+	FD_ZERO(&readfds);
+	FD_SET(_udp, &readfds);
 
-	// wait for timeout
-	int ret = ::select((int)(_udp+1), NULL, &fds, NULL, &tv);
-	if (ret < 0) return SOAPY_SDR_STREAM_ERROR;
-	if (ret == 0) return SOAPY_SDR_TIMEOUT;
+	// wait for udp socket read avail or timeout
+	int ret = ::select((int)(_udp+1), &readfds, NULL, NULL, &tv);
+	if (ret < 0)
+		return SOAPY_SDR_STREAM_ERROR;
+	if (ret == 0)
+		return nn < numElems ? (int)(numElems - nn) : SOAPY_SDR_TIMEOUT;
 
-	float *out = (float *)buffs[0];
-
-	size_t nn = numElems;
-
-	if (datacount) {
-		size_t nd = datasize - datacount;
-		//fprintf(stderr, "t numElems %lu datacount %lu nn %lu nd %d datasize %lu \n", numElems, datacount, nn, nd, datasize);
-		for (size_t n = nd; n < datasize; ++n) {
-			if (nn == 0) break;
-			*out++ = datasave[2 * n + 0];
-			*out++ = datasave[2 * n + 1];
-			--nn;
-			--datacount;
-		}
-		//fprintf(stderr, "t numElems %lu datacount %lu nn %lu\n", numElems, datacount, nn);
-		if (nn == 0) return (int)numElems;
-		datacount = 0;
-	}
-
+	// copy whole udp packets
 	while (nn >= datasize) {
 		int ret = processUDP(out);
+		// FIXME: we should handle ret==0, right?
 		if (ret > 0) {
 			out += 2 * ret;
 			nn -= ret;
 		}
 	}
 
+	// buffer a udp packet and copy partial data
 	if (nn > 0) {
 		int ret = processUDP(datasave);
 		if (ret > 0) {
@@ -258,7 +264,9 @@ void SoapyNetSDR::closeStream( SoapySDR::Stream *stream )
 size_t SoapyNetSDR::getStreamMTU( SoapySDR::Stream *stream ) const
 {
 	fprintf(stderr, "getStreamMTU\n");
-	return 0;
+	// 16 bit Contiguous Mode: 256 elements
+	// 24 bit Contiguous Mode: 240 elements
+	return datasize;
 }
 
 std::string SoapyNetSDR::getNativeStreamFormat(const int direction, const size_t channel, double &fullScale) const

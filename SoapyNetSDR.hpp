@@ -225,7 +225,8 @@ private:
 
   SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
 
-	float datasave[256 * 2 * sizeof(float)];
+    // a udp packet has up to 256 x 4 byte or 240 x 6 byte elements
+	float datasave[256 * 2];
 	size_t datacount;
 	size_t datasize;
 

@@ -14,7 +14,17 @@
 
 static SOCKET connectToServer(char *serverName,unsigned short *Port);
 
-SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
+SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args):
+  _tcp(-1),
+  _udp(-1),
+  _running(false),
+  _keep_running(false),
+  _sequence(0),
+  _nchan(1),
+  _sample_rate(0),
+  _bandwidth(0.0),
+  _gain(0),
+  datasize(240)
 {
  	const SoapySDR::Kwargs options;
 	if (args.size()) {
@@ -27,17 +37,6 @@ SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
 		if (args.count("netsdr"))printf(" %s \n",args.at("netsdr").c_str());
 	*/
 	}
-
-  _tcp = -1;
-  _udp = -1;
-  _running = false;
-  _keep_running = false;
-  _sequence = 0;
-  _nchan = 1;
-  _sample_rate = 0;
-  _bandwidth = 0.0;
-  _gain = 0;
-
 
     std::string host = args.at("netsdr");
 
@@ -491,9 +490,9 @@ void SoapyNetSDR::setSampleRate( const int direction, const size_t channel, cons
 
 
 	if (_sample_rate <= 1333333) {
-		datasize = 240;
+		datasize = 240; // elements of 6 bytes
 	} else {
-    datasize = 256;
+    datasize = 256; // elements of 4 bytes
   }
 
 
@@ -524,9 +523,9 @@ bool SoapyNetSDR::start()
 
   if (_sample_rate <= 1333333) {
     mode = 0x80; /* 24 bit Contiguous mode */
-    datasize = 240;
+    datasize = 240; // elements of 6 bytes
   } else {
-    datasize = 256;
+    datasize = 256; // elements of 4 bytes
   }
 
   if ( 0 ) /* TODO: 24 bit Contiguous mode */
