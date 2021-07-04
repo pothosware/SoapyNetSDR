@@ -17,15 +17,15 @@
 /* discovery protocol internals taken from CuteSDR project */
 PACK(typedef struct
 {
-  /* 56 fixed common byte fields */
-  unsigned char length[2]; 	/* length of total message in bytes (little endian byte order) */
-  unsigned char key[2];		/* fixed key key[0]==0x5A  key[1]==0xA5 */
-  unsigned char op;			/* 0 == Tx_msg(to device), 1 == Rx_msg(from device), 2 == Set(to device) */
-  char name[16];				/* Device name string null terminated */
-  char sn[16];				/* Serial number string null terminated */
-  unsigned char ipaddr[16];	/* device IP address (little endian byte order) */
-  unsigned char port[2];		/* device Port number (little endian byte order) */
-  unsigned char customfield;	/* Specifies a custom data field for a particular device */
+	/* 56 fixed common byte fields */
+	unsigned char length[2]; 	/* length of total message in bytes (little endian byte order) */
+	unsigned char key[2];		/* fixed key key[0]==0x5A  key[1]==0xA5 */
+	unsigned char op;			/* 0 == Tx_msg(to device), 1 == Rx_msg(from device), 2 == Set(to device) */
+	char name[16];				/* Device name string null terminated */
+	char sn[16];				/* Serial number string null terminated */
+	unsigned char ipaddr[16];	/* device IP address (little endian byte order) */
+	unsigned char port[2];		/* device Port number (little endian byte order) */
+	unsigned char customfield;	/* Specifies a custom data field for a particular device */
 }) discover_common_msg_t;
 
 /* UDP port numbers for discovery protocol */
@@ -42,10 +42,10 @@ PACK(typedef struct
 
 typedef struct
 {
-  std::string name;
-  std::string sn;
-  std::string addr;
-  uint16_t port;
+	std::string name;
+	std::string sn;
+	std::string addr;
+	uint16_t port;
 } unit_t;
 
 static std::vector < unit_t > discover_netsdr();
@@ -55,40 +55,40 @@ static std::vector < unit_t > discover_netsdr();
  **********************************************************************/
 static SoapySDR::KwargsList find_netSDR(const SoapySDR::Kwargs &args)
 {
-    SoapyNetSDR_SocketInit socket_init;
+	SoapyNetSDR_SocketInit socket_init;
 
-    SoapySDR::KwargsList results;
+	SoapySDR::KwargsList results;
 
-    //locate the device on the system...
-    //return a list of 0, 1, or more argument maps that each identify a device
+	//locate the device on the system...
+	//return a list of 0, 1, or more argument maps that each identify a device
 
-    SoapySDR::Kwargs options;
-    char buff[256];
-    for (const auto &unit : discover_netsdr()){
+	SoapySDR::Kwargs options;
+	char buff[256];
+	for (const auto &unit : discover_netsdr()){
 
-        //filter by serial when provided
-        if (args.count("serial") != 0 and args.at("serial") != unit.sn) continue;
+		//filter by serial when provided
+		if (args.count("serial") != 0 and args.at("serial") != unit.sn) continue;
 
-        options["name"]=unit.name;
-        options["serial"]=unit.sn;
-        options["label"]="RFspace NetSDR SN " + unit.sn;
-        sprintf(buff,"%u",unit.port);
-        options["netsdr"]=unit.addr+":"+buff;
+		options["name"]=unit.name;
+		options["serial"]=unit.sn;
+		options["label"]="RFspace NetSDR SN " + unit.sn;
+		sprintf(buff,"%u",unit.port);
+		options["netsdr"]=unit.addr+":"+buff;
 
-        //filter out duplicates in the discovery
-        int push=1;
-        for(unsigned long n=0;n<results.size();++n){
-             if(results[n] == options){
-                push=0;
-                break;
-            }
-        }
-        if(push)results.push_back(options);
+		//filter out duplicates in the discovery
+		int push=1;
+		for(unsigned long n=0;n<results.size();++n){
+			 if(results[n] == options){
+				push=0;
+				break;
+			}
+		}
+		if(push)results.push_back(options);
 
-    }
+	}
 
 
-    return results;
+	return results;
 }
 static std::vector < unit_t > discover_netsdr()
 {
@@ -134,9 +134,9 @@ static std::vector < unit_t > discover_netsdr()
 			if(pass == 1){
 				list[n].broadcast="255.255.255.255";
 			}
-			//std::cout << "name " <<  list[n].name << std::endl;
-			//std::cout << "address " <<  list[n].address << std::endl;
-			//std::cout << "broadcast " <<  list[n].broadcast << std::endl;
+			//std::cout << "name " << list[n].name << std::endl;
+			//std::cout << "address " << list[n].address << std::endl;
+			//std::cout << "broadcast " << list[n].broadcast << std::endl;
 
 			SOCKET sockTx;
 
@@ -185,7 +185,7 @@ static std::vector < unit_t > discover_netsdr()
 			sendto(sockTx, (const char *)&tx_msg, sizeof(tx_msg), 0, (struct sockaddr *)&peer_sa2, sizeof(peer_sa2));
 
 			closesocket(sockTx);
-	  }
+		}
 	}
 
 	while ( 1 )
@@ -193,7 +193,7 @@ static std::vector < unit_t > discover_netsdr()
 		size_t rx_bytes = 0;
 		unsigned char data[1024*2];
 
-		socklen_t addrlen = sizeof(host_sa);  /* length of addresses */
+		socklen_t addrlen = sizeof(host_sa); // length of addresses
 
 		int nbytes = recvfrom(sockRx, (char *)data, sizeof(data), 0, (struct sockaddr *)&host_sa, &addrlen);
 
@@ -206,8 +206,8 @@ static std::vector < unit_t > discover_netsdr()
 		{
 			discover_common_msg_t *rx_msg = (discover_common_msg_t *)data;
 
-			if ( KEY0 == rx_msg->key[0] && KEY1 == rx_msg->key[1]  &&
-			   MSG_RESP == rx_msg->op )
+			if ( KEY0 == rx_msg->key[0] && KEY1 == rx_msg->key[1] &&
+					MSG_RESP == rx_msg->op )
 			{
 
 				void *temp = rx_msg->port;
@@ -216,9 +216,9 @@ static std::vector < unit_t > discover_netsdr()
 				std::stringstream buffer;
 
 				buffer << int(rx_msg->ipaddr[3]) << "."
-					   << int(rx_msg->ipaddr[2]) << "."
-					   << int(rx_msg->ipaddr[1]) << "."
-					   << int(rx_msg->ipaddr[0]);
+						<< int(rx_msg->ipaddr[2]) << "."
+						<< int(rx_msg->ipaddr[1]) << "."
+						<< int(rx_msg->ipaddr[0]);
 
 
 				std::string addr=buffer.str();
@@ -248,7 +248,7 @@ static std::vector < unit_t > discover_netsdr()
  **********************************************************************/
 static SoapySDR::Device *make_netSDR(const SoapySDR::Kwargs &args)
 {
-    return new SoapyNetSDR(args);
+	return new SoapyNetSDR(args);
 }
 
 /***********************************************************************

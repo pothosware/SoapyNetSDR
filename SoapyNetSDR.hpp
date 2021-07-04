@@ -102,11 +102,11 @@ public:
     /*******************************************************************
      * Frontend corrections API
      ******************************************************************/
-   // bool hasFrequencyCorrection(const int direction, const size_t channel) const;
+    // bool hasFrequencyCorrection(const int direction, const size_t channel) const;
 
-   // void setFrequencyCorrection(const int direction, const size_t channel, const double value);
+    // void setFrequencyCorrection(const int direction, const size_t channel, const double value);
 
-   // double getFrequencyCorrection(const int direction, const size_t channel) const;
+    // double getFrequencyCorrection(const int direction, const size_t channel) const;
 
     /*******************************************************************
      * Gain API
@@ -174,7 +174,7 @@ public:
 
     //SoapySDR::RangeList getBandwidthRange(const int direction, const size_t channel) const;
 
-   bool transaction( const unsigned char *cmd, size_t size );
+    bool transaction( const unsigned char *cmd, size_t size );
 
   	bool transaction( const unsigned char *cmd, size_t size,
                     std::vector< unsigned char > &response );
@@ -185,7 +185,7 @@ public:
 
 	void apply_channel( unsigned char *cmd, size_t chan ) const;
 
-	int processUPD(float *data);
+	int processUDP(float *data);
 
 SOCKET _tcp;
 SOCKET _udp;
@@ -217,15 +217,15 @@ private:
   size_t _nchan;
   double _sample_rate;
   double _bandwidth;
-  
+
   double _gain;
-  
+
   SoapySDR::RangeList _list;
 
 
   SoapySDR::Stream* const RX_STREAM = (SoapySDR::Stream*) 0x2;
 
-	float datasave[256*2*sizeof(float)];
+	float datasave[256 * 2 * sizeof(float)];
 	size_t datacount;
 	size_t datasize;
 
