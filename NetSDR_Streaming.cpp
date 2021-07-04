@@ -183,18 +183,17 @@ int SoapyNetSDR::readStream(
 	float *out = (float *)buffs[0];
 
 	// get data from the buffer
-	size_t nd = datasize - datacount;
+	size_t dataOffs = datasize - datacount;
 	//fprintf(stderr, "t numElems %lu datacount %lu nn %lu nd %d datasize %lu \n", numElems, datacount, nn, nd, datasize);
-	for (size_t n = nd; n < datasize && nn > 0; ++n) {
-		*out++ = datasave[2 * n + 0];
-		*out++ = datasave[2 * n + 1];
-		--nn;
-		--datacount;
-	}
+	size_t dataElems = nn < datacount ? nn : datacount;
+	std::memcpy(out, datasave + dataOffs * 2, dataElems * 2 * sizeof(float));
+	out += dataElems * 2;
+	nn -= dataElems;
+	datacount -= dataElems;
+
 	//fprintf(stderr, "t numElems %lu datacount %lu nn %lu\n", numElems, datacount, nn);
 	if (nn == 0)
 		return (int)numElems;
-	datacount = 0; // FIXME: not needed, right?
 
 	// wait for a packet if more data is needed
 	// set a timeout value of 1 second
@@ -228,18 +227,15 @@ int SoapyNetSDR::readStream(
 	if (nn > 0) {
 		int ret = processUDP(datasave);
 		if (ret > 0) {
-			for (size_t n = 0; n < nn; ++n) {
-				*out++ = datasave[2 * n + 0];
-				*out++ = datasave[2 * n + 1];
-				ret--;
-			}
-			datacount = ret;
-			if (ret < 0) datacount = 0;
+			// FIXME: nn should be smaller than ret(=datasize), should make sure though
+			std::memcpy(out, datasave, nn * 2 * sizeof(float));
+			datacount = ret - nn;
+			nn = 0;
 			//fprintf(stderr, "b numElems %lu datacount %lu ret %d nn %lu\n",numElems,datacount,ret,nn);
 		}
 	}
 
-	return (int)numElems;
+	return (int)(numElems - nn);
 }
 
 int SoapyNetSDR::deactivateStream(
