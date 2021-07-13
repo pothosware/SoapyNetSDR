@@ -14,37 +14,36 @@
 
 static SOCKET connectToServer(char *serverName,unsigned short *Port);
 
-SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
+SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args):
+  _tcp(-1),
+  _udp(-1),
+  _running(false),
+  _keep_running(false),
+  _sequence(0),
+  _nchan(1),
+  _sample_rate(0),
+  _bandwidth(0.0),
+  _gain(0),
+  datasize(240)
 {
  	const SoapySDR::Kwargs options;
-	if(args.size()){
+	if (args.size()) {
 	/*
 		printf("driver args %lu ",args.count("driver"));
-		if(args.count("driver"))printf(" %s \n",args.at("driver").c_str());
+		if (args.count("driver"))printf(" %s \n",args.at("driver").c_str());
 		printf("label args %lu ",args.count("label"));
-		if(args.count("label"))printf(" %s \n",args.at("label").c_str());
+		if (args.count("label"))printf(" %s \n",args.at("label").c_str());
 		printf("netsdr args %lu ",args.count("netsdr"));
-		if(args.count("netsdr"))printf(" %s \n",args.at("netsdr").c_str());
+		if (args.count("netsdr"))printf(" %s \n",args.at("netsdr").c_str());
 	*/
 	}
 
-  _tcp=-1;
-  _udp=-1;
-  _running=false;
-  _keep_running=false;
-  _sequence=0;
-  _nchan=1;
-  _sample_rate=0;
-  _bandwidth=0.0;
-  _gain=0;
-
-
-    std::string host=args.at("netsdr");
+    std::string host = args.at("netsdr");
 
 	unsigned short Port;
 
-	_tcp=(SOCKET)connectToServer((char *)host.c_str(),&Port);
-    if(_tcp == -1){
+	_tcp = (SOCKET)connectToServer((char *)host.c_str(),&Port);
+    if (_tcp == -1) {
       fprintf(stderr,"connect failed\n");
       throw std::runtime_error(socket_strerror(SOCKET_ERRNO));
 	}
@@ -180,14 +179,12 @@ SoapyNetSDR::SoapyNetSDR(const SoapySDR::Kwargs &args)
 
     // fprintf(stderr,"mode %d\n",mode);
   }
-  
   getFrequencyRange2(SOAPY_SDR_RX, 0);
-   
- 
 }
+
 static int copyl(char *p1,char *p2,long n)
 {
-	if(!p1 || !p2)return 1;
+	if (!p1 || !p2)return 1;
 
 	while(n-- > 0)*p2++ = *p1++;
 
@@ -209,57 +206,57 @@ static SOCKET connectToServer(char *serverName,unsigned short *Port)
 	/* oneNeg=0xffffffff; */
 	oneNeg = -1L;
 
-	long netsize=200000;
+	long netsize = 200000;
 
-	buf_size=(int)(netsize+30);
+	buf_size = (int)(netsize+30);
 
-	result= -1;
+	result = -1;
 
     memset(&serverSocketAddr, 0, sizeof(serverSocketAddr));
 
-	if(!(np=strrchr(serverName,':'))){
+	if (!(np=strrchr(serverName,':'))) {
 	    printf("Bad Address (%s)",serverName);
 	    return result;
-	}else{
-	    *np=0;
+	} else {
+	    *np = 0;
 	    np += 1;
-	    *Port=(unsigned short)atol(np);
+	    *Port = (unsigned short)atol(np);
 	}
 
 //	hostAddr=(unsigned int)inet_addr(serverName);
 	inet_pton(AF_INET, serverName, &hostAddr);
-	if((long)hostAddr != (long)oneNeg){
-	    serverSocketAddr.sin_addr.s_addr=hostAddr;
+	if ((long)hostAddr != (long)oneNeg) {
+	    serverSocketAddr.sin_addr.s_addr = hostAddr;
 	    printf("Found Address %lx hostAddr %x oneNeg %x diff %x\n",(long)hostAddr,hostAddr,oneNeg,hostAddr-oneNeg);
-	}else{
-	    serverHostEnt=gethostbyname(serverName);
-	    if(serverHostEnt == NULL){
+	} else {
+	    serverHostEnt = gethostbyname(serverName);
+	    if (serverHostEnt == NULL) {
 	        printf("Could Not Find Host (%s)\n",serverName);
 	        return result;
 	    }
 	    copyl((char *)serverHostEnt->h_addr,(char *)&serverSocketAddr.sin_addr,serverHostEnt->h_length);
 	}
-	serverSocketAddr.sin_family=AF_INET;
-	serverSocketAddr.sin_port=htons(*Port);
-	Try=0;
-	while(Try++ < 10){
-	    if((toServerSocket=socket(AF_INET,SOCK_STREAM,0)) < 0){
+	serverSocketAddr.sin_family = AF_INET;
+	serverSocketAddr.sin_port = htons(*Port);
+	Try = 0;
+	while(Try++ < 10) {
+	    if ((toServerSocket = socket(AF_INET,SOCK_STREAM,0)) < 0) {
             printf("socket Error  (%ld)\n",(long)SOCKET_ERRNO);
 	        return toServerSocket;
 	    }
 
-	    ret=setsockopt( toServerSocket, SOL_SOCKET, SO_SNDBUF,
+	    ret = setsockopt( toServerSocket, SOL_SOCKET, SO_SNDBUF,
                   (char *)&buf_size, sizeof(int) );
-        if(ret < 0)printf("setsockopt SO_SNDBUF failed\n");
+        if (ret < 0)printf("setsockopt SO_SNDBUF failed\n");
 
-	    ret=connect(toServerSocket,(struct sockaddr *)&serverSocketAddr,sizeof(serverSocketAddr));
-	    if(ret == -1){
+	    ret = connect(toServerSocket,(struct sockaddr *)&serverSocketAddr,sizeof(serverSocketAddr));
+	    if (ret == -1) {
                 if (SOCKET_ERRNO == SOCKET_ECONNREFUSED)  {
                     printf("Connection Refused  Try(%d)\n",Try);
                     closesocket(toServerSocket);
                     std::this_thread::sleep_for(std::chrono::seconds(4));
                     continue;
-                }else{
+                } else {
                     printf("Connection Error  (%ld)\n",(long)SOCKET_ERRNO);
                     return ret;
                 }
@@ -341,7 +338,7 @@ bool SoapyNetSDR::transaction( const unsigned char *cmd, size_t size,
 SoapyNetSDR::~SoapyNetSDR(void)
 {
 	closesocket(_tcp);
-  	closesocket(_udp);
+  closesocket(_udp);
 }
 void SoapyNetSDR::setAntenna( const int direction, const size_t channel, const std::string &name )
 {
@@ -492,14 +489,14 @@ void SoapyNetSDR::setSampleRate( const int direction, const size_t channel, cons
   _sample_rate = u32_rate;
 
 
-	if(_sample_rate <= 1333333){
-		datasize=240;
-	}else{
-		datasize=256;
-	}
+	if (_sample_rate <= 1333333) {
+		datasize = 240; // elements of 6 bytes
+	} else {
+    datasize = 256; // elements of 4 bytes
+  }
 
 
-	datacount=0;
+	datacount = 0;
 
   if ( rate != _sample_rate )
     std::cerr << "Radio reported a sample rate of " << (uint32_t)_sample_rate << " Hz"
@@ -524,11 +521,11 @@ bool SoapyNetSDR::start()
 
   unsigned char mode = 0; /* 0 = 16 bit Contiguous Mode */
 
-  if(_sample_rate <= 1333333){
-  	mode = 0x80; /* 24 bit Contiguous mode */
-  	datasize=240;
-  }else{
-  	datasize=256;
+  if (_sample_rate <= 1333333) {
+    mode = 0x80; /* 24 bit Contiguous mode */
+    datasize = 240; // elements of 6 bytes
+  } else {
+    datasize = 256; // elements of 4 bytes
   }
 
   if ( 0 ) /* TODO: 24 bit Contiguous mode */
@@ -596,8 +593,8 @@ void SoapyNetSDR::setGain( const int direction, const size_t channel, const doub
     else /* 0 dB */
       atten[sizeof(atten)-1] = 0x00;
   }
-	_gain=gain;
-	
+	_gain = gain;
+
   transaction( atten, sizeof(atten) );
 
 
@@ -725,8 +722,8 @@ SoapySDR::RangeList SoapyNetSDR::getFrequencyRange2(const int direction, const s
 }
 size_t SoapyNetSDR::getNumChannels( const int dir ) const
 {
-	if(dir == SOAPY_SDR_RX)return(_nchan);
-	
+	if (dir == SOAPY_SDR_RX)return(_nchan);
+
 	return(0);
 }
 
@@ -796,14 +793,14 @@ double SoapyNetSDR::getGain( const int direction, const size_t channel) const
   /* SDR-IQ 5.2.5 RF Gain */
   /* SDR-IP 4.2.3 RF Gain */
   /* NETSDR 4.2.6 RF Gain */
-  
+
 /*
   unsigned char atten[] = { 0x05, 0x20, 0x38, 0x00, 0x00 };
 
   apply_channel( atten, channel );
 
   std::vector< unsigned char > response;
-  
+
     fprintf(stderr,"SoapyNetSDR::getGain gain\n");
 
  if ( ! transaction( atten, sizeof(atten), response ) )
@@ -813,15 +810,16 @@ double SoapyNetSDR::getGain( const int direction, const size_t channel) const
 
   double gain = code;
 
-  if( code & 0x80 )
+  if ( code & 0x80 )
     gain = (code & 0x7f) - 0x80;
 
   if ( RFSPACE_SDR_IQ == _radio )
     gain += 10;
 */
- 
+
   return _gain;
 }
+
 double SoapyNetSDR::getSampleRate( const int direction, const size_t channel ) const
 {
 	std::lock_guard<std::mutex> lock(_device_mutex);
@@ -829,18 +827,17 @@ double SoapyNetSDR::getSampleRate( const int direction, const size_t channel ) c
 
 	return(_sample_rate);
 }
+
 std::vector<double> SoapyNetSDR::listBandwidths( const int direction, const size_t channel ) const
 {
 	std::vector<double> options;
 	options.push_back( 34e6 );
 	return(options);
 }
+
 std::vector<std::string> SoapyNetSDR::listFrequencies( const int direction, const size_t channel ) const
 {
 	std::vector<std::string> names;
 	names.push_back( "RF" );
 	return(names);
 }
-
-
-
