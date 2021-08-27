@@ -313,12 +313,12 @@ bool SoapyNetSDR::transaction( const unsigned char *cmd, size_t size,
     if ( (length < 2) || (length > (int)sizeof(data)) )
       return false;
 
-    length -= 2; /* subtract header size */
-
-    nbytes = recv(_tcp, (char *)&data[2], length, 0); /* read payload */
-    if ( nbytes != length )
-      return false;
-
+    length -= 2;   /* subtract header size */
+    if (length > 0) {
+       nbytes = recv(_tcp, (char *)&data[2], length, 0); /* read payload if it's there */
+       if ( nbytes != length )
+         return false;
+    }
     rx_bytes = 2 + length; /* header + payload */
   }
 
