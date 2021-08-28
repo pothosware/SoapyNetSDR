@@ -77,6 +77,9 @@ std::vector<interfaceInformation> interfaceList()
 
             interfaceInformation ifAddr;
             ifAddr.name = pCurrAddresses->AdapterName;
+            
+            if (pCurrAddresses->OperStatus != IfOperStatusUp)
+               continue;   // Ignore adapters not UP
 
             for (auto addr_i = pCurrAddresses->FirstUnicastAddress; addr_i != NULL; addr_i = addr_i->Next)
             {
