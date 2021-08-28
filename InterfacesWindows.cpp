@@ -14,6 +14,12 @@
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
+#if (_WIN32_WINNT < 0x0501)   /* WIN2000-SP1. network 169.254/16 */
+#define IN4_IS_ADDR_LINKLOCAL(ip)   ((ip)->S_un.S_un_b.s_b1 == 169 && (ip)->S_un.S_un_b.s_b2 == 254)
+#else
+#include <mstcpip.h>
+#endif
+
 std::vector<interfaceInformation> interfaceList()
 {
     std::vector<interfaceInformation> list;
@@ -76,7 +82,13 @@ std::vector<interfaceInformation> interfaceList()
             {
                 const auto a = addr_i->Address.lpSockaddr;
                 const auto sa = (struct sockaddr_in *)a;
+                
                 if (a->sa_family != AF_INET) continue; //just IPv4
+                
+                // we do no want a link-local address; we cannot bind to it. And there is no-one there
+                if (IN4_IS_ADDR_LINKLOCAL(&sa->sin_addr))
+                   continue;
+                
                 char buf[INET_ADDRSTRLEN];
                 inet_ntop(a->sa_family, &(sa->sin_addr), buf, sizeof(buf));
                 //extract broadcast address for this interface
