@@ -36,8 +36,6 @@ std::vector<interfaceInformation> interfaceList()
     // default to unspecified address family (both)
     ULONG family = AF_UNSPEC;
 
-    LPVOID lpMsgBuf = NULL;
-
     PIP_ADAPTER_ADDRESSES pAddresses = NULL;
     ULONG outBufLen = 0;
     ULONG Iterations = 0;
@@ -51,13 +49,11 @@ std::vector<interfaceInformation> interfaceList()
 
         pAddresses = (IP_ADAPTER_ADDRESSES *) MALLOC(outBufLen);
         if (pAddresses == NULL) {
-            printf
-                ("Memory allocation failed for IP_ADAPTER_ADDRESSES struct\n");
+            printf ("Memory allocation failed for IP_ADAPTER_ADDRESSES struct\n");
             return list;
         }
 
-        dwRetVal =
-            GetAdaptersAddresses(family, flags, NULL, pAddresses, &outBufLen);
+        dwRetVal = GetAdaptersAddresses(family, flags, NULL, pAddresses, &outBufLen);
 
         if (dwRetVal == ERROR_BUFFER_OVERFLOW) {
             FREE(pAddresses);
@@ -86,7 +82,8 @@ std::vector<interfaceInformation> interfaceList()
                 const auto a = addr_i->Address.lpSockaddr;
                 const auto sa = (struct sockaddr_in *)a;
                 
-                if (a->sa_family != AF_INET) continue; //just IPv4
+                if (a->sa_family != AF_INET) 
+                   continue;   // We want just IPv4-addresses (no NetSDR device supports IPv6)
                 
                 // we do no want a link-local address; we cannot bind to it. And there is no-one there
                 if (IN4_IS_ADDR_LINKLOCAL(&sa->sin_addr))
@@ -112,20 +109,8 @@ std::vector<interfaceInformation> interfaceList()
                dwRetVal);
         if (dwRetVal == ERROR_NO_DATA)
             printf("\tNo addresses were found for the requested parameters\n");
-        else {
-
-            if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                    FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, 
-                    NULL, dwRetVal, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),   
-                    // Default language
-                    (LPTSTR) & lpMsgBuf, 0, NULL)) {
-                printf("\tError: %s", (const char *)lpMsgBuf);
-                LocalFree(lpMsgBuf);
-                if (pAddresses)
-                    FREE(pAddresses);
-                return list;
-            }
-        }
+        else 
+            printf ("\tError: %s", socket_strerror(dwRetVal));                                
     }
 
     if (pAddresses) {
