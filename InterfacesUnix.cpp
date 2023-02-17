@@ -13,6 +13,9 @@ std::vector<interfaceInformation> interfaceList()
 	getifaddrs(&addrs);
 	for (iloop = addrs; iloop != NULL; iloop = iloop->ifa_next)
 	{
+		if (iloop->ifa_addr == NULL)
+			continue;
+
 		if (iloop->ifa_addr->sa_family != AF_INET) continue; //just IPv4
 
 		s4 = (struct sockaddr_in *)(iloop->ifa_addr);
