@@ -62,28 +62,26 @@ static SoapySDR::KwargsList find_netSDR(const SoapySDR::Kwargs &args)
 	//locate the device on the system...
 	//return a list of 0, 1, or more argument maps that each identify a device
 
-	SoapySDR::Kwargs options;
-	char buff[256];
+	SoapySDR::Kwargs devInfo;
 	for (const auto &unit : discover_netsdr()){
 
 		//filter by serial when provided
 		if (args.count("serial") != 0 and args.at("serial") != unit.sn) continue;
 
-		options["name"]=unit.name;
-		options["serial"]=unit.sn;
-		options["label"]="RFspace NetSDR SN " + unit.sn;
-		sprintf(buff,"%u",unit.port);
-		options["netsdr"]=unit.addr+":"+buff;
+		devInfo["name"] = unit.name;
+		devInfo["serial"] = unit.sn;
+		devInfo["label"] = "RFspace NetSDR SN " + unit.sn;
+		devInfo["netsdr"] = unit.addr + ":" + std::to_string(unit.port);
 
 		//filter out duplicates in the discovery
 		int push=1;
 		for(unsigned long n=0;n<results.size();++n){
-			 if(results[n] == options){
+			 if(results[n] == devInfo){
 				push=0;
 				break;
 			}
 		}
-		if(push)results.push_back(options);
+		if(push)results.push_back(devInfo);
 
 	}
 

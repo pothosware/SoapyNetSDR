@@ -5,12 +5,28 @@ cmake_minimum_required(VERSION 3.1)
 
 project(SoapyNetSDR CXX)
 
-if(CMAKE_COMPILER_IS_GNUCXX)
+#enable c++11 features
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+
+    #C++11 is a required language feature for this project
+    include(CheckCXXCompilerFlag)
+    CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_STD_CXX11)
+    if(HAS_STD_CXX11)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    else(HAS_STD_CXX11)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    endif()
+
+    #Thread support enabled (not the same as -lpthread)
+    list(APPEND RTLSDR_LIBRARIES -pthread)
 
     #disable warnings for unused parameters
-    add_definitions(-Wno-unused-parameter)
+    add_compile_options(-Wall -Wextra -Wno-unused-parameter -Wno-overloaded-virtual)
+endif()
 
-endif(CMAKE_COMPILER_IS_GNUCXX)
+if(APPLE)
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wc++11-extensions")
+endif(APPLE)
 
 find_package(SoapySDR CONFIG)
 if (NOT SoapySDR_FOUND)
