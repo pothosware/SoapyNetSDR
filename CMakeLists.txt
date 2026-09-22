@@ -27,10 +27,13 @@ if(APPLE)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wc++11-extensions")
 endif(APPLE)
 
-find_package(SoapySDR CONFIG)
-if (NOT SoapySDR_FOUND)
-    message(FATAL_ERROR "Soapy SDR development files not found...")
-endif ()
+find_package(SoapySDR NO_MODULE REQUIRED)
+
+get_filename_component(_SoapySDR_ROOT "${SoapySDR_INCLUDE_DIRS}/.." ABSOLUTE)
+message(STATUS "SoapySDR root directory: ${_SoapySDR_ROOT}")
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT "${_SoapySDR_ROOT}" STREQUAL "/usr")
+    set_property(CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE ${_SoapySDR_ROOT})
+endif()
 
 SOAPY_SDR_MODULE_UTIL(
     TARGET netSDRSupport
