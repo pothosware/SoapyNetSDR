@@ -1,0 +1,32 @@
+Source: soapynetsdr
+Section: hamradio
+Priority: optional
+Maintainer: Christian W. Zuckschwerdt <zany@triq.net>
+Build-Depends:
+    debhelper,
+    cmake,
+    libsoapysdr-dev
+Standards-Version: 4.5.0
+Homepage: https://github.com/pothosware/SoapyNetSDR/wiki
+Vcs-Git: https://github.com/pothosware/SoapyNetSDR.git
+Vcs-Browser: https://github.com/pothosware/SoapyNetSDR
+
+Package: soapysdr0.9-module-netsdr
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: NetSDR device support for SoapySDR
+ The Soapy NetSDR project provides a SoapySDR hardware support module.
+ Using this, any program using SoapySDR to interface to software
+ defined radio hardware can make use of NetSDR devices.
+
+Package: soapysdr-module-netsdr
+Architecture: all
+Depends: soapysdr0.9-module-netsdr, ${misc:Depends}
+Description: NetSDR device support for SoapySDR (default version)
+ The Soapy NetSDR project provides a SoapySDR hardware support module.
+ Using this, any program using SoapySDR to interface to software
+ defined radio hardware can make use of NetSDR devices.
+ .
+ This is an empty dependency package that pulls in the NetSDR module
+ for the default version of libsoapysdr.
